@@ -402,7 +402,7 @@ envoy:
 
 
 ingress:
-  host: charles.info.example
+  host: charleszinhomdp.info.example
   class: nginx
   enabled: true
 
