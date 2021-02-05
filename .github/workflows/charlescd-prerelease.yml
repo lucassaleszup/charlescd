@@ -1,9 +1,9 @@
-name: charlescd-prerelease
+name: charlescd-prodrelease
 
 on:
   release:
     types:
-      - prereleased
+      - released
     branches: [ main ]
 
 jobs:
@@ -51,11 +51,12 @@ jobs:
   build_and_push_release_circle_matcher:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+
       - name: Get the version
         id: get_version
         run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
 
-      - uses: actions/checkout@v2
       - name: Set up GraalVM
         uses: DeLaGuardo/setup-graalvm@master
         with:
@@ -164,7 +165,7 @@ jobs:
       - uses: actions/cache@v1
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/yarn-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
@@ -229,6 +230,79 @@ jobs:
           tag_with_ref: false
           tag_with_sha: false
 
+  build_and_push_release_compass:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.14.2'
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1.0.1
+        with:
+          path: ./compass
+          username: ${{secrets.DOCKERHUB_USERNAME}}
+          password: ${{secrets.DOCKERHUB_PASSWORD}}
+          repository: zupcharles/charlescd-compass
+          dockerfile: ./compass/Dockerfile
+          tags: latest,${{ steps.get_version.outputs.VERSION }}
+          tag_with_ref: false
+          tag_with_sha: false
+
+  build_and_push_release_matcher_s3_sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+
+      - uses: actions/cache@v1
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Use Node.js 12.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+
+      - run: npm ci
+        working-directory: ./utils/matcher-s3-sync
+
+      - run: npm run build --if-present
+        working-directory: ./utils/matcher-s3-sync
+        env:
+          CI: true
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1.0.1
+        with:
+          path: ./utils/matcher-s3-sync
+          username: ${{secrets.DOCKERHUB_USERNAME}}
+          password: ${{secrets.DOCKERHUB_PASSWORD}}
+          repository: zupcharles/matcher-s3-sync
+          dockerfile: ./utils/matcher-s3-sync/Dockerfile
+          tags: latest,${{ steps.get_version.outputs.VERSION }}
+          tag_with_ref: false
+          tag_with_sha: false
+
   deploy:
     runs-on: ubuntu-latest
     needs: [ build_and_push_release_butler,
@@ -236,7 +310,8 @@ jobs:
              build_and_push_release_moove,
              build_and_push_release_octopipe,
              build_and_push_release_ui,
-             build_and_push_release_villager
+             build_and_push_release_villager,
+             build_and_push_release_compass
     ]
     steps:
       - uses: actions/checkout@v2
@@ -254,6 +329,11 @@ jobs:
           echo -e "\r\nappVersion: ${{ steps.get_version.outputs.VERSION }}\r\n" >> ./install/helm-chart/Chart.yaml &&
           cat ./install/helm-chart/Chart.yaml &&
           sed -i -E "s/(zupcharles\/.*:)(.*)/\1${{ steps.get_version.outputs.VERSION }}/" ./install/helm-chart/values.yaml
+
+      - name: Update helm dependencies
+        uses: WyriHaximus/github-action-helm3@v1.0.0
+        with:
+          exec: helm dependency update ./install/helm-chart
 
       - name: Generate single file
         uses: WyriHaximus/github-action-helm3@v1.0.0
@@ -280,28 +360,36 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
+        continue-on-error: true
         with:
           title: CI Update of charts and changelog
           commit-message: |
             auto generated PR
             Signed-off-by: Charles CD Bot <charlescdbot@users.noreply.github.com>
 
+      - name: Zup Settings
+        run: |
+          cat <<-EOF > values-charles.yaml
+          ${{ secrets.VALUES_CHARLES }}
+          EOF
+
+      - name: Deploy
+        uses: WyriHaximus/github-action-helm3@v1.0.0
+        with:
+          exec: helm upgrade charlescd ./install/helm-chart/ --install --wait --atomic --namespace=charles --values=./values-charles.yaml
+          kubeconfig: '${{ secrets.KUBECONFIG }}'
+
       - name: Zup Settings dev
         run: |
-          git checkout .
-          sed -i -E "s/(http:\/\/charles\.info\.example)/https:\/\/${{ secrets.HOST_DEV }}/" ./install/helm-chart/values.yaml &&
-          sed -i -E "s/(charlescd-postgresql)/${{ secrets.PG_HOST_DEV }}/" ./install/helm-chart/values.yaml &&
-          sed -i -E "/name: DB_USER/N;s/(name: DB_USER.*value: \")(keycloak\")/\1charlesadmin\"/" ./install/helm-chart/values.yaml &&
-          sed -i -E "s/DCWYW66Mq2ca6w8u/firstpassword/" ./install/helm-chart/values.yaml &&
-          sed -i -E "/postgresql:/N;s/(postgresql:.*enabled: )(true)/\1false/" ./install/helm-chart/values.yaml &&
-          sed -i -E "/nginx:/N;s/(nginx:.*enabled: )(true)/\1false/" ./install/helm-chart/values.yaml &&
-          sed -i -E "s/name: charlescd_(.*)/name: charlescd\1/" ./install/helm-chart/values.yaml &&
-          sed -i -E "s/user: charlescd_(.*)/user: charlesadmin/" ./install/helm-chart/values.yaml &&
-          sed -i -E "s/password: (.*)/password: firstpassword/" ./install/helm-chart/values.yaml &&
-          sed -i -E "/redis:/{N;N;N;s/firstpassword/hb2Fj9MGKjBkZ6zV/}" ./install/helm-chart/values.yaml
+          cat <<-EOF > values-charles-dev.yaml
+          ${{ secrets.VALUES_CHARLES_DEV }}
+          EOF
+          cat <<-EOF > ./install/helm-chart/templates/nginx-cert.yaml
+          ${{ secrets.NGINX_CERT }}
+          EOF
 
       - name: Deploy dev
         uses: WyriHaximus/github-action-helm3@v1.0.0
         with:
-          exec: helm upgrade charlescd ./install/helm-chart/ --install --wait --atomic --values=./install/helm-chart/values.yaml
+          exec: helm upgrade charlescd ./install/helm-chart/ --install --wait --atomic --values=./values-charles-dev.yaml
           kubeconfig: '${{ secrets.KUBECONFIG_DEV }}'
