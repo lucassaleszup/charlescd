@@ -2,8 +2,8 @@ postgresqlGlobal: &postgresInfo
   host: &postgresHost charlescd-postgresql
   port: &postgresPort 5432
 
-hostGlobal: &hostGlobal http://charles.info.example
-keycloakHost: &keycloakHost http://charles.info.example/keycloak
+hostGlobal: &hostGlobal http://charleszinhomdp.info.example
+keycloakHost: &keycloakHost http://charleszinhomdp.info.example/keycloak
 
 CharlesApplications:
   butler:
@@ -340,7 +340,7 @@ keycloak:
       /subsystem=undertow/server=default-server/host=default-host:write-attribute(name=default-web-module,value=keycloak-server.war)
       {{- end }}
       {{- end }}
-      /subsystem=keycloak-server/spi=hostname/provider=default:write-attribute(name=properties.frontendUrl, value="http://charles.info.example/keycloak/auth")
+      /subsystem=keycloak-server/spi=hostname/provider=default:write-attribute(name=properties.frontendUrl, value="http://charleszinhomdp.info.example/keycloak/auth")
       run-batch
       stop-embedded-server
 
