@@ -396,7 +396,7 @@ envoy:
     enabled: true
     hosts: []
   idm:
-    endpoint: "keycloak-http"
+    endpoint: "charlescd-keycloak-http"
     port: 80
     path: /keycloak/auth/realms/charlescd/protocol/openid-connect/userinfo
     protocol: http
