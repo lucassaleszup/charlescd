@@ -404,12 +404,10 @@ envoy:
 ingress:
   host: charleszinhomdp.info.example
   class: nginx
-  enabled: false
-
-nginx_ingress_controller:
-  enabled: false
+  enabled: true
 
 ingress-nginx:
+  enabled: false
   controller:
     service:
       annotations: {}
