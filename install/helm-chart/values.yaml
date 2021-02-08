@@ -298,6 +298,7 @@ redis:
 
 keycloak:
   enabled: true
+  fullnameOverride: charlescd-keycloak
   postgresql:
     enabled: false
   extraEnv: |
