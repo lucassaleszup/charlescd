@@ -100,7 +100,7 @@ data:
                       local token = request_handle:headers():get("authorization")
                       local request = require("luajit-init")
                       local response = request.send(
-                        "{{ .Values.idm.protocol }}://charlescd-{{ .Values.idm.endpoint }}{{ .Values.idm.path }}",
+                        "{{ .Values.idm.protocol }}://{{ .Release.Name }}-{{ .Values.idm.endpoint }}{{ .Values.idm.path }}",
                         {
                           headers = {
                             authorization = token
