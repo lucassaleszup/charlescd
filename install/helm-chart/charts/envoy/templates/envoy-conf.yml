@@ -199,7 +199,7 @@ data:
             - endpoint:
                 address:
                   socket_address:
-                    address: charlescd-keycloak
+                    address: charlescd-keycloak-http
                     port_value: 80
       {{ if .Values.compass.enabled }}
       - name: charlescd-compass
