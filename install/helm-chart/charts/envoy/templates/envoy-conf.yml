@@ -64,7 +64,7 @@ data:
                   - match:
                       prefix: "/keycloak"
                     route:
-                      cluster: {{ .Values.keycloak.fullnameOverride}}-http
+                      cluster: charlescd-keycloak-http
                     typed_per_filter_config:
                       envoy.filters.http.lua:
                         "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
