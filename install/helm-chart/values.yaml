@@ -2,8 +2,8 @@ postgresqlGlobal: &postgresInfo
   host: &postgresHost charlescd-postgresql
   port: &postgresPort 5432
 
-hostGlobal: &hostGlobal http://charleszinhomdp.info.example
-keycloakHost: &keycloakHost http://charleszinhomdp.info.example/keycloak
+hostGlobal: &hostGlobal http://charles.info.example
+keycloakHost: &keycloakHost http://charles.info.example/keycloak
 
 CharlesApplications:
   butler:
@@ -272,19 +272,6 @@ CharlesApplications:
         user: charlescd_moove
         password: 7Qs2KuM9gYzw48BS
 
-
-
-
-
-# postgresqlInit:
-#   enabled: true
-#   database:
-#     host:
-#     port:
-#     user:
-#     password:
-#     name:
-
 postgresql:
   enabled: true
   fullnameOverride: *postgresHost
@@ -301,21 +288,27 @@ keycloak:
   fullnameOverride: charlescd-keycloak
   postgresql:
     enabled: false
+
+  database:
+    <<: *postgresInfo
+    name: charlescd_keycloak
+    user: charlescd_keycloak
+    password: DCWYW66Mq2ca6w8u
   extraEnv: |
     - name: PROXY_ADDRESS_FORWARDING
       value: "true"
     - name: DB_USER
-      value: "keycloak"
+      value: "{{ .Values.database.user }}"
     - name: DB_PASSWORD
-      value: "DCWYW66Mq2ca6w8u"
+      value: "{{ .Values.database.password }}"
     - name: DB_VENDOR
       value: "POSTGRES"
     - name: DB_PORT
-      value: "5432"
+      value: "{{ .Values.database.port }}"
     - name: DB_ADDR
-      value: charlescd-postgresql
+      value: "{{ .Values.database.host }}"
     - name: DB_DATABASE
-      value: "keycloak"
+      value: "{{ .Values.database.name }}"
     - name: DB_SCHEMA
       value: "public"
     - name: JAVA_OPTS
@@ -330,6 +323,7 @@ keycloak:
     runAsNonRoot: false
 
   contextPath: keycloak/auth
+  hosts: *hostGlobal
 
   startupScripts:
     contextPath.cli: |
@@ -341,7 +335,7 @@ keycloak:
       /subsystem=undertow/server=default-server/host=default-host:write-attribute(name=default-web-module,value=keycloak-server.war)
       {{- end }}
       {{- end }}
-      /subsystem=keycloak-server/spi=hostname/provider=default:write-attribute(name=properties.frontendUrl, value="http://charleszinhomdp.info.example/keycloak/auth")
+      /subsystem=keycloak-server/spi=hostname/provider=default:write-attribute(name=properties.frontendUrl, value="{{ .Values.hosts }}/keycloak/auth")
       run-batch
       stop-embedded-server
 
