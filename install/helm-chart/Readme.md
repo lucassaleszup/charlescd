@@ -11,7 +11,7 @@ Suggestion: write here the file's purpose.
     - Default `keycloakHost`value: http://charles.info.example/keycloak
     - Example of custom value: https://charles.org/keycloak
 
-## Postgresql
+## PostgreSQL
 
 If your stack already has a PostgreSQL instance, you could change `postgresGlobal.host` to your PostgreSQL host and executing all commands in `templates/postgres-cm.yaml` in your database. If you want to change the passwords, remember to change in all `CharlesApplication.applications.database` values and `keycloak.database`.
 In this case, change `postgresql.enabled` to false to not install default PostgreSQL.
