@@ -1,65 +1,65 @@
 # CharlesCD chart
 
+Suggestion: write here the file's purpose.
+
 ## Mandatory.
 
- - Change hostGlobal and keycloakHost.
-    - Default hostGlobal: http://charles.info.example
-    - Custom hostGlobal example: https://charles.org
-    - Default keycloakHost: http://charles.info.example/keycloak
-    - Custom keycloakHost: https://charles.org/keycloak
+ - Change `hostGlobal` and `keycloakHost` values.
+    - Default `hostGlobal` value: http://charles.info.example
+    - Example of custom value: https://charles.org
+
+    - Default `keycloakHost`value: http://charles.info.example/keycloak
+    - Example of custom value: https://charles.org/keycloak
 
 ## Postgresql
 
-If your stack already has a postgresql instance, you could change postgresGlobal.host to your postgresql host and executing all commands in templates/postgres-cm.yaml in your database, if you wanna change the passwords, remember to change in all CharlesApplication.applications.database values and keycloak.database.
-Change postgresql.enabled to false to not install default postgresql.
-
+If your stack already has a PostgreSQL instance, you could change `postgresGlobal.host` to your PostgreSQL host and executing all commands in `templates/postgres-cm.yaml` in your database. If you want to change the passwords, remember to change in all `CharlesApplication.applications.database` values and `keycloak.database`.
+In this case, change `postgresql.enabled` to false to not install default PostgreSQL.
 
 ## Redis
 
-If your stack already has a redis instance, you could change CharlesApplications.circleMatcher.redis values to your redis connection data.
-Change redis.enabled to false to not install default redis.
+If your stack already has a Redis instance, you could change `CharlesApplications.circleMatcher.redis` values to your Redis connection data.
+In this case, change `redis.enabled` to false to don't install default Redis.
 
 ## Keycloak
 
-We use the codecentric chart, available in [github](https://github.com/codecentric/helm-charts/tree/master/charts/keycloak), so all the values could be edited using values.keycloak.some-property, by default we change the following params:
+We use the code-centric chart, available in [github](https://github.com/codecentric/helm-charts/tree/master/charts/keycloak), so all the values could be edited using `values.keycloak.some-property`. By default we change the following params:
 
-contextPath: /keycloak/auth
-fullNameOverride: "charlescd-keycloak"
-postgres.enabled: false
-extraEnv: With database values and import realm
-securityContext.runAsUser: 0
-securityContext.runAsNonRoot: false
-startupScripts.contextPath.cli: frontend url and context config
-livenessProbe: with new contextPath
-readinessProbe: with new context path
-extraInitContainers: to test postgres connection
-auth.adminPassword: admin
-extraVolumes: realm import volume
-extraVolumesMounts: mount import volume
+- `contextPath`: /keycloak/auth
+- `fullNameOverride`: "charlescd-keycloak"
+- `postgres.enabled`: false
+- `extraEnv`: With database values and import realm
+- `securityContext.runAsUser`: 0
+- `securityContext.runAsNonRoot`: false
+- `startupScripts.contextPath.cli`: frontend url and context config
+- `livenessProbe`: with new contextPath
+- `readinessProbe`: with new context path
+- `extraInitContainers`: to test postgres connection
+- `auth.adminPassword`: admin
+- `extraVolumes`: realm import volume
+- `extraVolumesMounts`: mount import volume
 
 ## Envoy
 
-We use envoy to make reverse proxy, you can enable or disable a route to application changing envoy.application.enable to false.
-
-External IDM set envoy.keycloak.enabled = false and change envoy.idm values.
+We use envoy to make reverse proxy. You can enable or disable a route to application changing `envoy.application.enable` to false.
+If you want to use your IDM instead, set `envoy.keycloak.enabled` to false and change `envoy.idm values`to your IDM configuration.
 
 
 # CharlesCD properties
 
-
 | Key | Description | Default | 
 | -------------- | ----------- | ---------- |
-| postgresqlGlobal.host | Postgres path that will be used by CharlesCD | charlescd-postgresql |
-| postgresqlGlobal.port | Postgres port that will be used by CharlesCD | 5432 |
+| postgresqlGlobal.host | PostgreSQL path that will be used by CharlesCD | charlescd-postgresql |
+| postgresqlGlobal.port | PostgreSQL port that will be used by CharlesCD | 5432 |
 | hostGlobal | Application host | http://charles.info.example |
 | keycloakHost | Keycloak or external IDM host |  http://charles.info.example/keycloak/auth |
 | CharlesApplications | CharlesCD configuration  | ---- |
 | CharlesApplications.butler.enabled | Enable butler install | true |
 | CharlesApplications.butler.name | Component name | charlescd-butler |
 | CharlesApplications.butler.sidecarIstio.enabled | Enable istio sidecar | true |
-| CharlesApplications.butler.healthCheck.path | health check path | /healthcheck |
-| CharlesApplications.butler.healthCheck.port | health check port | 3000 |
-| CharlesApplications.butler.healthCheck.initialDelay | health check initial delay | 60 |
+| CharlesApplications.butler.healthCheck.path | Health check path | /healthcheck |
+| CharlesApplications.butler.healthCheck.port | Health check port | 3000 |
+| CharlesApplications.butler.healthCheck.initialDelay | Health check initial delay | 60 |
 | CharlesApplications.butler.image.repository | Docker image registry | zupcharles |
 | CharlesApplications.butler.image.application | Docker image application | charlescd-butler |
 | CharlesApplications.butler.imagePullSecrets | Point to docker secret | false
